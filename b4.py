@@ -1,4 +1,6 @@
 import logging
+
+import requests
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 from private import user_creds, srv_address, regex, PROXY, TOKEN
@@ -26,11 +28,14 @@ def check_phone(update, context):
         number = number[1:]
     logger.info("User %s %s - phone number %s", contact.first_name, contact.last_name, number)
     context.user_data['phone'] = number
-    try:
-        _ = user_creds[number]
+    result = requests.get(f"http://127.0.0.1:5000/check?text={number}")
+    if result.status_code == 200:
         update.message.reply_text('Так-так. А напиши-ка мне пароль - название нашего посёлка.')
-    except KeyError:
-        update.message.reply_text('No such number.')
+    elif result.status_code == 404:
+        update.message.reply_text('Нету у меня такого номера. Возможно база ещё не заполнена.')
+        return ConversationHandler.END
+    else:
+        update.message.reply_text('Internal error.')
         return ConversationHandler.END
     return PASS2
 
@@ -38,7 +43,8 @@ def check_phone(update, context):
 def get_contact(update, context):
     number = context.user_data['phone']
     update.message.reply_text('Точно. Напоминаю адрес сервера - {}'.format(srv_address))
-    for i in user_creds[number]:
+    user_pass = requests.get(f"http://127.0.0.1:5000/msg?text={number}").text.split("\n")
+    for i in user_pass:
         if i is not None:
             update.message.reply_text('Пароль: {}'.format(i))
     return ConversationHandler.END
