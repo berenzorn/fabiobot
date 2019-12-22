@@ -14,20 +14,23 @@ def check():
 
 
 @app.route('/msg')
-def message():
+def system():
+    try:
+        get_type = int(request.args.get('type'))
+        name = user_creds[request.args.get('text')][2 * (get_type - 1)]
+        passwd = user_creds[request.args.get('text')][2 * (get_type - 1) + 1]
+        return f"{name} {passwd}"
+    except KeyError:
+        return Response(status=404)
+
+
+@app.route('/all')
+def whole():
     try:
         return "\n".join(user_creds[request.args.get('text')])
     except KeyError:
         return Response(status=404)
 
 
-
 if __name__ == '__main__':
     app.run()
-
-# check
-# system
-# server
-# mail
-# unf
-# all
