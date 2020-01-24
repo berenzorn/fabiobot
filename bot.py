@@ -16,7 +16,7 @@ PASS1, PASS2, PASS3, PASS4, PASS5 = range(5)
 
 
 def start(update: Update, context: CallbackContext):
-    text = 'Привет, я бот Фабик. Отправь мне свой номер и я напомню твои пароли.'
+    text = 'Привет, я бот Фабик. Жмякни внизу кнопочку и отправь мне свой номер, а я напомню твои пароли.'
     contact_button = KeyboardButton('Отправить контакт', request_contact=True)
     kbd = ReplyKeyboardMarkup([[contact_button]], resize_keyboard=True)
     update.message.reply_text(text, reply_markup=kbd)
