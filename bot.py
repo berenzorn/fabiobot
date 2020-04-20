@@ -1,7 +1,6 @@
 import logging
-
+import json
 import requests
-from private import srv_address, srv_address_2, regex, PROXY, TOKEN
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler, CallbackQueryHandler, CallbackContext)
 from telegram import (ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, Update,
@@ -43,8 +42,7 @@ def check_phone(update: Update, context: CallbackContext):
 
 
 def get_contact(update: Update, context: CallbackContext):
-    update.message.reply_text('Точно. Напоминаю адрес сервера - {}'.format(srv_address))
-    # update.message.reply_text('Или так - {}'.format(srv_address_2))
+    update.message.reply_text('Точно. Напоминаю адрес сервера - {}'.format(requests.get(f"http://127.0.0.1:5000/addr").text))
     keyboard = [[InlineKeyboardButton("Компьютер", callback_data='1'),
                  InlineKeyboardButton("Почта", callback_data='2')],
                 [InlineKeyboardButton("Сервер", callback_data='3'),
@@ -69,7 +67,7 @@ def get_inline_contact(update: Update, context: CallbackContext):
                  InlineKeyboardButton("УНФ", callback_data='4')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.edit_message_text(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                          text="Какой пароль показать?".format(srv_address), reply_markup=reply_markup)
+                          text="Какой пароль показать?", reply_markup=reply_markup)
     return PASS4
 
 
@@ -99,7 +97,8 @@ def pass_button(update: Update, context: CallbackContext):
                  InlineKeyboardButton("Не, не надо", callback_data='0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.send_message(chat_id=query.message.chat_id, message_id=query.message.message_id,
-                     text='Подсказать ещё?\n<i>Если да, нажми два раза</i>', reply_markup=reply_markup, parse_mode='HTML')
+                     text='Подсказать ещё?\n<i>Если да, нажми два раза</i>',
+                     reply_markup=reply_markup, parse_mode='HTML')
     return PASS5
 
 
@@ -109,7 +108,8 @@ def one_more(update: Update, context: CallbackContext):
     if choice:
         return PASS3
     else:
-        context.bot.send_message(chat_id=query.message.chat_id, message_id=query.message.message_id, text='Агась. Хорошего дня)')
+        context.bot.send_message(chat_id=query.message.chat_id,
+                                 message_id=query.message.message_id, text='Агась. Хорошего дня)')
         return ConversationHandler.END
 
 
@@ -124,13 +124,16 @@ def error(update: Update, context: CallbackContext):
 
 
 if __name__ == '__main__':
-    updater = Updater(TOKEN, request_kwargs=PROXY, use_context=True)
+    token = requests.get(f"http://127.0.0.1:5000/token").text
+    proxy = json.loads(requests.get(f"http://127.0.0.1:5000/proxy").text)
+    updater = Updater(token, request_kwargs=proxy, use_context=True)
     dp = updater.dispatcher
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             PASS1: [MessageHandler(Filters.contact, check_phone, pass_user_data=True)],
-            PASS2: [MessageHandler(Filters.regex(regex), get_contact, pass_user_data=True),
+            PASS2: [MessageHandler(Filters.regex(requests.get(f"http://127.0.0.1:5000/regex").text),
+                                   get_contact, pass_user_data=True),
                     MessageHandler(Filters.text, wrong_contact, pass_user_data=True)],
             PASS3: [CallbackQueryHandler(get_inline_contact)],
             PASS4: [CallbackQueryHandler(pass_button)],

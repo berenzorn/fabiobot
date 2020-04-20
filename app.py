@@ -1,13 +1,46 @@
 from flask import Flask, request, Response
-from private import user_creds
+import private
+import json
 
 app = Flask(__name__)
+
+
+@app.route('/addr')
+def send_addr():
+    try:
+        return private.srv_address
+    except AttributeError:
+        return Response(status=404)
+
+
+@app.route('/regex')
+def send_regex():
+    try:
+        return private.regex
+    except AttributeError:
+        return Response(status=404)
+
+
+@app.route('/token')
+def send_token():
+    try:
+        return private.TOKEN
+    except AttributeError:
+        return Response(status=404)
+
+
+@app.route('/proxy')
+def send_proxy():
+    try:
+        return json.dumps(private.PROXY)
+    except AttributeError:
+        return Response(status=404)
 
 
 @app.route('/check')
 def check():
     try:
-        _ = user_creds[request.args.get('text')]
+        _ = private.user_creds[request.args.get('text')]
         return Response(status=200)
     except KeyError:
         return Response(status=404)
@@ -17,8 +50,8 @@ def check():
 def system():
     try:
         get_type = int(request.args.get('type'))
-        name = user_creds[request.args.get('text')][2 * (get_type - 1)]
-        passwd = user_creds[request.args.get('text')][2 * (get_type - 1) + 1]
+        name = private.user_creds[request.args.get('text')][2 * (get_type - 1)]
+        passwd = private.user_creds[request.args.get('text')][2 * (get_type - 1) + 1]
         return f"{name} {passwd}"
     except KeyError:
         return Response(status=404)
@@ -27,7 +60,7 @@ def system():
 @app.route('/all')
 def whole():
     try:
-        return "\n".join(user_creds[request.args.get('text')])
+        return "\n".join(private.user_creds[request.args.get('text')])
     except KeyError:
         return Response(status=404)
 
